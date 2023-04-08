@@ -380,6 +380,7 @@ def export_individual_clips(composition: List[dict], outputfile: str):
     print("[+] Writing ouput files.")
     for i, clip in enumerate(cut_clips):
         clipfilename = basename + "_" + str(i).zfill(5) + ext
+        composition[i]["clipfilename"] = clipfilename.split('\\')[-1]
         clip.write_videofile(
             clipfilename,
             codec="libx264",
@@ -387,6 +388,8 @@ def export_individual_clips(composition: List[dict], outputfile: str):
             remove_temp=True,
             audio_codec="aac",
         )
+
+    return composition
 
 
 def export_m3u(composition: List[dict], outputfile: str):
@@ -476,7 +479,9 @@ def videogrep(
         if isinstance(query, list):
             query = " ".join(query)
         print("No results found for", query)
+        return segments
         return False
+
 
     # padding
     segments = pad_and_sync(segments, padding=padding, resync=resync)
@@ -493,26 +498,31 @@ def videogrep(
     if demo:
         for s in segments:
             print(s["file"], s["start"], s["end"], s["content"])
+        return segments
         return True
 
     # export individual clips
     if export_clips:
-        export_individual_clips(segments, output)
+        segments = export_individual_clips(segments, output)
+        return segments
         return True
 
     # m3u
     if output.endswith(".m3u"):
         export_m3u(segments, output)
+        return segments
         return True
 
     # mpv edls
     if output.endswith(".mpv.edl"):
         export_mpv_edl(segments, output)
+        return segments
         return True
 
     # fcp xml (compatible with premiere/davinci)
     if output.endswith(".xml"):
         export_xml(segments, output)
+        return segments
         return True
 
     # export supercut
@@ -520,3 +530,4 @@ def videogrep(
         create_supercut_in_batches(segments, output)
     else:
         create_supercut(segments, output)
+    return segments
